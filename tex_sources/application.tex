@@ -1,0 +1,134 @@
+\section{Application: Estimation of Poverty and Inequality in Austria}\label{Par:Application}
+
+In the final part of this thesis  the most important capabilities of the \code{mquantreg} package are demonstrated in the context of  \textit{poverty mapping}.  Firstly, the concept of poverty mapping is outlined. Afterwards an applied on Austrian income data based on the M-quantile small area approach is presented. What follows, can serve together with the actual R-output displayed in the appendix as a basis   for a vignette for the \code{mquantreg} package. 
+%Therefore, by way of exemption some unformatted R output is included to show potential users the actual results.  
+\subsection{The Poverty Mapping Framework}
+Poverty mapping is an approach introduced by \cite{henninger_where_2002}. The aim of poverty mapping is to obtain high resolution maps of poverty  for smaller regional areas of a  country. These maps help to understand the spatial distribution of poverty, and in combination with small area methods that "borrow strength" they can help to "uncover poor areas that might otherwise go undetected" \citep[p.1]{henninger_where_2002}. Because poverty mapping provides an intuitive  and easily interpretable way of presenting the findings of poverty estimation, it can be of especial importance when research is used in the context of policy and decision making. 
+
+A detailed description of the poverty mapping approach is presented in \cite{henninger_where_2002}. Generally, the approach can be divided in eight\footnote{Step 8 (monitoring of use and feedback) is not relevant in this application.} steps which include defining the poverty concept and its measurement, model building and presentation of results. For the economy of space the different steps are presented  directly  together with the application on the EU-SILC (European Union Statistics on Income and Living Conditions) data in the now following application.
+
+\subsection{Poverty Mapping for Austria with the MQ (SAE) Approach}
+\paragraph{Step 1: Define purpose and expected use of mapping:}
+
+The aim of this application is to present the spatial distribution of inequality and poverty in Austria on district level. 
+
+
+\paragraph{Step 2: Select measure(s) of poverty and human well-being:}
+
+To measure poverty and inequality, only income-based measures are used. Results are presented for 
+ the head count  ratio, the poverty gap  (see equation \eqref{Eq:FGT}) and  Gini coefficient (see equation \eqref{Eq:Gini}). 
+For the first and second indicator, the poverty line is set to $60\%$ of the median income.
+
+\paragraph{Step 3: Select input data:}
+
+The data set is the Austrian EU-SILC  as provided by the  \code{emdi} package.  This data is a synthetic dataset which is generated based on the real  Austrian EU-SILC. 
+
+Data is available on  population level (\code{eusilcA\_pop}) and sample level (\code{eusilcA\_smp}) for 17 variables including  three regional variables for the states, districts and counties.
+From these variables,  the equalized household income (eqIncome) is used as the dependent variable, and it is assumed to be measured only in the sample. 
+
+For presentation purposes, only five explanatory variables are used: the respondents gender (gender),  net employee cash or near cash income (cash), net cash benefits or losses from self-employment (self\_empl), net unemployment cash benefits (unempl\_empl)  and the equivalized household size according to the modified OECD scale (eqsize). Gender is a factor variable and the other variables  are numeric.  
+ Descriptive statistics for the variables are displayed in table \ref{tab:eu_sum}. 
+
+\input{../Tables/eu_summary.tex}
+
+\paragraph{Step 4: Select method of estimating or calculating poverty indicator:}
+
+The measurement of poverty is based on a single variable, which is the equivalized household income. Hence, only income type concepts of poverty are considered. 
+
+\paragraph{Step 5: Select a method to calculate, estimate, or display poverty indicator for geographic area:}
+
+The method to estimate the respective indicators is the MQ (SAE) approach, as presented in this thesis. 
+To be able to apply the MQ (SAE) method a model has to be build that links the available auxiliary data to the target variable, usually based on theoretical assumptions or previous research results.  For the here selected independent variables, a first set of M-quantile regressions can be run to investigate, if there is a sufficient relationship between the dependent and independent variables (as defined in the previous step). 
+
+\input{../Tables/reg.tex}
+
+Table \ref{Tab:mqreg} shows the results of three M-quantile regressions that are estimated with  the \texttt{mq} function. As an approximate of the explanatory strength of the model in the data, the  Pseudo-$R^2$ can be considered.\footnote{The Pseudo-$R^2$ is calculated as $1-SSR/SST$. Because the residuals of the M-quantile regression do not generally sum up to 1, it can also produce negative values, especially for M-quantiles distant from 0.5. Therefore, it should only be used  for M-quantile regressions near $\tau = 0.5$ and regarded as an approximate figure.} In this case, up to $31\%$ of the variance can be explained by the  $\tau = 0.5$ M-quantile regression. This indicates that at least in the sample there is a sufficient relationship between the variables.
+The M-quantile regression results further show, that the independent variables have effects pointing in the same direction on the different conditional M-quantiles. In particular, being female, having a large family and the reception of unemployment benefit have a negative impact on the equivalized household income in the sampled data for all estimated M-quantile regressions
+
+As explained in section \ref{Sec:mqs}, the MQ (SAE) approach is based on pseudo random effects. It will however be only sensible to use this approach, if there is indeed variation of intercepts and/or slopes in between the areas. 
+To check this, the \code{mmqm} function can serve as a diagnostic tool. Note that the \code{mmqm} model is always stored when the \code{mq\_sae} function is run, such that it is also possible to run these diagnostics at a later point. 
+
+Figure \ref{Fig:mmqm_plots} shows a plot of the pseudo random effects per variable based on the \code{mmqm.plot} function. In each plot, there is one regression line per area. Indeed, there are considerable differences in the intercept between the areas, and especially for the variable "cash" different slopes can be found. 
+\begin{figure}[H]
+\center
+\includegraphics[width=0.9\textwidth]{../Plots/mmqm_plot.pdf}
+\caption{Pseudo random effects per independent variable based on the \code{mmqm.plot} function. One line per district}
+\label{Fig:mmqm_plots}
+\end{figure}
+
+One can also check whether there are differences in the resulting ${\bar\tau_j}$ values per area. In table \ref{Tab:tau_val} the values for the first 20 districts are shown, and there are evidently positive ($\bar{\tau}_j >0.5$) and negative ($\bar{\tau}_j <0.5$) pseudo random effects.
+
+\input{../Tables/area_tau.tex}\label{Tab:tau_val}
+
+Based on the now available knowledge from the Monte-Carlo simulations from section \ref{Sec:simulation} the MQ (SAE) model produces good results for normal and longtailed near-normal error distributions. Figure \ref{Fig:dens} indicates, that at least the dependent variable shows such a distribution. If this is taken as a first guess on the error distribution, the MQ (SAE) approach can make sense. 
+
+\begin{figure}[H]
+\center
+\includegraphics[width=0.6\textwidth]{../Plots/dens_plot.pdf}
+\caption{Density plot of the dependent variable eqIncome}
+\label{Fig:dens}
+\end{figure}
+
+Overall, the data appears to be suitable for the MQ (SAE) approach. Hence, the  \code{mq\_sae} function is used to calculate the model. 
+The model is run using the standard settings for point estimation (i.e. $L=50$ approximations). The MSE calculation is based on   $B=30$ bootstrap populations and $S=30$ bootstrap samples.
+The poverty maps can  then be created with the \code{map\_plot} function from the \code{emdi} package (here a modified version of this function is used to obtain a different color scale). 
+As a comparison, the results for the EBP with Box Cox transformation and $L=50$ approximations and  $B=30$ bootstrap populations are also reported.
+
+\paragraph{Step 6:  Decide on number of units for final map (resolution) to present poverty data:}
+
+This decision on the resolution should be based on the purpose of the map, but one should also take measures of uncertainty into account. Therefore, maps showing the MSE are also created. 
+The results are presented on the district level, which means 96 Austrian districts. 
+
+\paragraph{Step 7:  Produce and distribute maps:}
+
+The resulting maps now show  point estimates in figure (\ref{Fig:maps}) as well as the MSE as a measure of their precision in figure (\ref{Fig:maps_mse}). 
+
+ \begin{figure}[H]
+ \center
+\includegraphics[width=0.9\textwidth]{../Plots/point_map}
+
+\caption[Point estimation results for poverty mapping in Austria based on the \code{mq\_sae} and \code{ebp} functions]{Point estimation results for poverty mapping in Austria based on the \code{mq\_sae} and \code{ebp} functions. Note that these maps are created with a modified version of the \code{emdi::map\_plot} function to allow for a different color scale.}
+\label{Fig:maps}
+\end{figure}
+
+The point estimation results show indeed an uneven spatial distribution of poverty. In general, the  poverty estimation is relatively consistent regarding both   indicators. Those districts, that have a high HCR value, also have a rather high PG and vice versa. To some extent this also applies to the relation of inequality and poverty. Particularly the MQ (SAE) approach estimates high values for the Gini in districts, that also have a high level of poverty.  
+
+Concerning the comparison of both methods, the results are pretty similar.  Most importantly, the same districts are identified by both methods as those with high or low levels of poverty and inequality. A slight difference can be found regarding the magnitude, because the  EBP estimates somewhat higher values of poverty, while  the MQ (SAE) approach estimates slightly higher values for the Gini coefficient. However, the differences are relatively small. 
+
+ \begin{figure}[H]
+\includegraphics[width=0.9\textwidth]{../Plots/mse_map}
+\caption[MSE estimation results for poverty mapping in Austria based on the \code{mq\_sae} and \code{ebp} functions]{MSE estimation results for poverty mapping in Austria based on the \code{mq\_sae} and \code{ebp} functions. Note that these maps are created with a modified version of the \code{emdi::map\_plot} function to allow for a different color scale.}
+\label{Fig:maps_mse}
+\end{figure}
+
+
+The MSE estimation results generally indicate a higher uncertainty for the MQ (SAE) estimates. The MQ (SAE) approach shows consistent results over the areas, while the MSE is higher for the HCR. The EBP also finds a higher MSE for the  HCR than for the other indicators. For the HCR, both methods  also show relative similar results over the areas. However, for Gini and PG, the EBP estimates much lower levels of uncertainty. For the MQ (SAE) approach three areas (marked as grey) are even excluded, because a MSE of more than one is found.  Because these are areas only have a sample size of one and four,  it is however relative unintuitive that the EBP estimates indicators for these areas with very high precision.  Nonetheless, because the number of bootstrap samples and populations is set rather low,  the results should not be overinterpreted, but rather serve as an example for visualizing MSE estimation results in the course of poverty mapping. 
+
+
+In practice, the important question is now, which results are closer to the true poverty and inequality indicators. This will depend mostly on the question, if the assumptions of the EBP are fulfilled, in which case it should be given the priority. The  QQ-plot shown in figure \ref{Fig:qq} in  the appendix indicates however, that the distributional assumptions are violated for the individual errors. Hence,  it could be better to choose the more robust results of the MQ-approach. 
+On the other hand, it should be highlighted that both methods produce in relative terms similar results in the point estimation. Therefore, the question in which districts poverty is higher or lower would be answered similarly by both methods, which might be of importance in applied work. 
+
+%
+%\begin{figure}[H]
+%\includegraphics[width=1\textwidth]{../Plots/mq_plot.pdf}
+%\caption{Result from plot.mq function }
+%\label{Fig:mq_plot}
+%\end{figure}
+
+
+%\begin{figure}[H]
+%\includegraphics[width=1\textwidth]{../Plots/mmqm_all.pdf}
+%\caption{Result from plot.mq function }
+%\label{Fig:mq_plot}
+%\end{figure}
+%
+%
+%\begin{figure}[H]
+%\includegraphics[width=1\textwidth]{../Plots/mmqm_area.pdf}
+%\caption{Result from plot.mq function }
+%\label{Fig:mq_plot}
+%\end{figure}
+
+
+%\input{../Tables/eu_quant.tex}\label{Tab:eu_quant}
+
